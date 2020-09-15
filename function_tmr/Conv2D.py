@@ -258,12 +258,12 @@ class Conv2d(_ConvNd):
         input_new = input.clone()
         bias_new = self.bias.clone()
 
-        weight_new = f2Q(weight_new,data_width)
-        input_new = f2Q(input_new,data_width)
-        bias_new = f2Q(bias_new,15)
+        weight_new, qcode_w = f2Q(weight_new, data_width)
+        input_new, qcode_i = f2Q(input_new, data_width)
+        bias_new, _ = f2Q(bias_new, 16, qcode_w + qcode_i)
 
         y_correct = F.conv2d(input_new, weight_new, bias_new, self.stride,self.padding, self.dilation, self.groups)  
-        y_correct = Q2f(y_correct,data_width) 
+        y_correct = Q2f(y_correct, qcode_i, qcode_w) 
         #y_correct1 = F.conv2d(input, self.weight, self.bias, self.stride,self.padding, self.dilation, self.groups)
         '''
         y_noise1 = self.new_conv(weight_new,input_new,probs,data_width)

@@ -56,30 +56,20 @@ def insert_fault(data, errorbit, Q, data_width):
     value = int(data) ^ int(bitmask)
     return Qcode2float(value, Q, data_width)
   
-def f2Q(input,data_width):
-    Q = data_width -1
+def f2Q(input, data_width, qcode=None):
+    import math
+    if qcode is None:
+        qcode = data_width - torch.ceil(math.log(input.abs().max()) + 1 - 1e-5)
     mul_n = 2**Q  #矩阵要乘的系数，（-mul_n,mul_n-1)
     min_n = -mul_n
     max_n = mul_n -1
-    min_ones = min_n*torch.ones(input.shape)
-    #min_ones = min_ones.cuda(1)
-    max_ones = max_n * torch.ones(input.shape)
-    #max_ones = max_ones.cuda(1)
-    input = torch.round(input * (2**Q)) #Q编码并四舍五入
-    #min_n = min_n.cuda(1)
-    #max_n = max_n.cuda(1)
-    input = input.cpu() 
-    input = torch.where(input > max_n, max_ones, input) #其中的element大于最大值，则改为最大值，否则保留原数值
-    input = torch.where(input < min_n, min_ones, input)  # 其中的element小于最大值，则改为最小值，否则保留原数值
-    #input = input.int()
-    input = input.cuda()
-    return input
+    Qp = 2 ** (data_width - 1) - 1
+    Qn = -(2 ** (data_widht - 1))
+    input = (input * (2 ** qcode)).round().clamp(Qn, Qp) #Q编码并四舍五入
+    return input, qcode
 
-def Q2f(input,data_width):
-    Q = data_width -1
-    mul_n = 2 ** Q  # 矩阵要除的系数
-    mul_n = mul_n * mul_n
-    input = input /mul_n
+def Q2f(input, qcode_i, qcode_w):
+    input = input * 2 ** (-qcode_i - qcode_w)
     return input
 
 '''
